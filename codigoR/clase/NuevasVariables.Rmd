@@ -1,0 +1,301 @@
+---
+title: "Nuevas Variables"
+author: "Alejandro Bolaños"
+date: "2018-10-8"
+version: 0.7
+output: 
+  html_document:
+    theme: spacelab
+    highlight: monochrome
+    df_print: paged
+#    toc: true
+#    toc_depth: 2
+
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+> Facts are stubborn things, but statistics are pliable. --― Mark Twain
+
+Iniciamos los entornos.
+
+```{r}
+knitr::opts_knit$set(root.dir = 'C:/Users/saralb/Desktop/UBA/DropBox/UBA2018_20180803')
+rm( list=ls() )
+
+gc()
+```
+
+Para empezar a trabajar con comodidad vamos a definir una función para armar modelos `GBM` para un grupo de variables.
+
+```{r}
+library( "data.table" )
+library(dplyr)
+library(xgboost)
+modelar <- function(datos, clase) {
+  dtrain   <- xgb.DMatrix( data = data.matrix(datos),  label = clase, missing=NA )
+  
+  set.seed(17)
+  modelo1 = xgb.cv( 
+    data = dtrain,  
+    missing = NA,
+    stratified = TRUE,       
+    nround= 25,
+    nfold = 5,
+    watchlist = list(metric='auc'),
+    eval_metric= "auc", 
+    maximize =TRUE,
+    tree_method = "hist",
+		grow_policy="lossguide",
+    objective="binary:logistic",
+    verbose = 0
+  )
+
+  return(max(modelo1$evaluation_log$test_auc_mean))
+
+}
+```
+
+Vamos a medir unicamente el `AUC`.
+
+Primero vamos a ver las variables mas importantes de un modelo para febrero:
+
+```{r}
+
+febrero  <-  fread("C:/Users/saralb/Desktop/UBA/DropBox/UBA2018_20180803/datasets/dias/201802_dias.txt", header=TRUE, sep="\t")
+clases_febrero <- ifelse(febrero$clase_ternaria == "BAJA+2", 1, 0)
+febrero$clase_ternaria <- NULL
+
+dtrain   <- xgb.DMatrix( data = data.matrix(febrero),  label = clases_febrero, missing=NA )
+
+set.seed(17)
+modelo = xgb.train( 
+				data = dtrain, missing = NA,
+				nround= 20, eval_metric= "auc", 
+				maximize =TRUE, objective="binary:logistic", verbose = 0)
+xgb.importance(colnames(febrero),model = modelo)
+```
+
+* ¿Por qué aparece este variable `Visa_fechaalta` entre las más importante? 
+
+```{r}
+febrero_completo <- cbind(febrero, clases_febrero)
+library(tidyr)
+ds <- febrero_completo %>% 
+      mutate(vfa_m = floor(Visa_fechaalta / 30)) %>%
+      group_by(vfa_m, clases_febrero) %>%
+      summarise(cantidad = n()) %>% 
+      spread(key=clases_febrero, value=cantidad) %>%
+      mutate(r = `1` / `0`)
+
+ds
+```
+
+* Nota algún fenómeno? 
+* Es consistente el comportamiento que vemos en `Febrero` en los meses anteriores?
+
+Vemos la importancias de la variable `Visa_marca_atraso`. Estudiemos que tan buena es viendo que tan bien da un modelo solo con esta variable:
+
+```{r}
+print(paste0("Visa: ", modelar(febrero[,"Master_marca_atraso"], clases_febrero)))
+print(paste0("Master: ", modelar(febrero[,"Visa_marca_atraso"], clases_febrero)))
+```
+```{r}
+max_marca_atraso = pmax( febrero[,"Master_marca_atraso"], febrero[,"Visa_marca_atraso"]) 
+
+print(paste0("Mix: ",modelar(max_marca_atraso,clases_febrero)))
+```
+
+Observamos que al juntar una variable se puede lograr sumar información de forma unidimensional. 
+
+* Que tipo de interacciones conoce?
+* Todas las interacciones van a dar valor a los modelos? Depende del tipo de algoritmo?
+
+Veamos el peso de una variable en el global. Para esto mismo, eliminemos la variable más importante y veamos que tanto cae la performance del mismo
+
+```{r}
+feb_sin_vos <- febrero
+feb_sin_vos$mcaja_ahorro_Paquete <- NULL
+set.seed(17)
+print(paste0("Febrero completo:", modelar(febrero, clases_febrero)))
+print(paste0("Febrero sin la mejor:", modelar(feb_sin_vos, clases_febrero)))
+```
+
+* Esperaba esos números? 
+* Y si quitamos las 3 mejores?
+
+Recordar que no hay selección de features en la configuración por defecto.
+
+# Comportamiento histórico
+
+Sumaremos información a los individuos en función del comportamiento, para esto trabajaremos con un grupo de variables.
+
+```{r }
+
+
+df <- data.frame()
+
+periodos <- c("201802","201801","201712","201711","201710","201709")
+periodos <- sort(periodos)
+for (pp in periodos) {
+  df <- rbind(df, fread(paste0("C:/Users/saralb/Desktop/UBA/DropBox/UBA2018_20180803/datasets/dias/",pp,"_dias.txt"), 
+                        header=TRUE, sep="\t")[,c("foto_mes","numero_de_cliente","clase_ternaria", "mcuentas_saldo","mcuenta_corriente_Paquete","mpasivos_margen", "mcaja_ahorro_Paquete","cliente_edad")])
+}
+
+
+```
+
+Veamos como varia el valor de la variable para una persona.
+
+```{r}
+# Tomamos una persona al azar que sea clase continua y que sea clase BAJA+x
+
+
+library(ggplot2)
+
+cliente <- df %>%
+            filter(foto_mes == 201802) %>% 
+            # filter(clase_ternaria == "CONTINUA") %>% 
+            select(numero_de_cliente) %>%
+            sample_n(1)
+
+ggplot(df[df$numero_de_cliente == cliente$numero_de_cliente,], aes(x = foto_mes, y = mcuentas_saldo)) + geom_point( size=1)
+
+```
+
+Vemos que las fechas nos juegan una mala pasada, calculamos una nueva variable para visualizar de forma correcta.
+
+Ejecute numerosas veces para ver los distintos comportamientos de los diferentes clientes y con diferentes variables:
+
+```{r}
+variable <- "mcaja_ahorro_Paquete"
+cliente <- df %>%
+            filter(foto_mes == 201802) %>% 
+            #  filter(clase_ternaria != "CONTINUA") %>% 
+            select(numero_de_cliente, clase_ternaria) %>%
+            sample_n(1)
+
+
+data <- df[df$numero_de_cliente == cliente$numero_de_cliente,]
+data$x <- 1:nrow(data)
+data$y = data[[variable]]
+
+ggplot(data, aes(x = x, 
+                y = y)) + 
+  geom_point( size=1) +
+  geom_smooth(method = "lm") + 
+  ggtitle(paste0(cliente$numero_de_cliente, "-", cliente$clase_ternaria))
+
+```
+
+Sumamos algunas métricas para comparar:
+
+```{r}
+variable <- "mcaja_ahorro_Paquete"
+cliente <- df %>%
+            filter(foto_mes == 201802) %>% 
+            # filter(clase_ternaria != "CONTINUA") %>% 
+            select(numero_de_cliente, clase_ternaria) %>%
+            sample_n(1)
+
+
+data <- df[df$numero_de_cliente == cliente$numero_de_cliente,]
+data$x <- 1:nrow(data)
+data$y = data[[variable]]
+
+max_data = max(data[[variable]])
+min_data = min(data[[variable]])
+avg_data = mean(data[[variable]])
+
+ggplot(data, aes(x = x, 
+                y = y)) + 
+  geom_point( size=1) +
+  geom_smooth(method = "lm") + 
+  ggtitle(paste0(cliente$numero_de_cliente, "-", cliente$clase_ternaria)) +
+  geom_hline(yintercept=max_data, color='red') +
+  geom_hline(yintercept=avg_data, color='black') +
+  geom_hline(yintercept=min_data, color='green')
+
+
+```
+
+Con nuestras observaciones, vamos a sumar algunas variables a nuestro modelo con información historica sobre los clientes, y vamos a medir su calidad.
+
+```{r}
+
+# Variable suelta:
+data <- (df %>% filter(foto_mes == 201802))$mcaja_ahorro_Paquete
+
+target <- (df %>% filter(foto_mes == 201802) %>% 
+                mutate(target = ifelse(clase_ternaria == "BAJA+2",1,0)))$target
+
+modelar(data, target)
+```
+Y un conjunto de datos con las variables agregadas:
+
+```{r}
+data_agregada <- df %>% 
+           arrange(numero_de_cliente,foto_mes) %>%
+           group_by(numero_de_cliente) %>%
+           summarise(pp = max(foto_mes),
+                     mcaja_ahorro_Paquete_mean = mean(mcaja_ahorro_Paquete),
+                     mcaja_ahorro_Paquete_min = max(mcaja_ahorro_Paquete),
+                     mcaja_ahorro_Paquete_max = min(mcaja_ahorro_Paquete)
+                    ) %>%
+            filter(pp == 201802) %>%
+            select(mcaja_ahorro_Paquete_mean,
+                   mcaja_ahorro_Paquete_max,
+                   mcaja_ahorro_Paquete_min)  
+            
+
+modelar(data_agregada, target)
+```
+
+Por último probamos con el cálculo de una función personalizada para realizar la agregación:
+
+```{r}
+# Propia: porcentaje de variación entre los dos últimos meses
+mi_agg <- function(x) {
+  n <- length(x)
+  if (n == 1) {
+    return(NA)
+  } 
+  x[n]/x[n-1]*100
+}
+
+data_mi_agg <- df %>% 
+           arrange(numero_de_cliente,foto_mes) %>%
+           group_by(numero_de_cliente) %>%
+           summarise(pp = max(foto_mes),
+                     mcaja_ahorro_Paquete_porc = mi_agg(mcaja_ahorro_Paquete)) %>%
+            filter(pp == 201802)
+```
+
+Notar que tarda su tiempo en realizar el cálculo. Se puede hacer más rápida la función?
+
+* `View(lag)` podemos ver una implementación de una función bastante performante.
+
+Lo más importante es poder ver que aplicamos bien la función, validando con casos de ejemplo. Se suelen cometer muchos errores por problemas de código.
+
+```{r}
+# Tomamos un cliente al azar y auditamos los resultados
+
+cliente <- (df %>%
+            filter(foto_mes == 201802) %>% 
+            sample_n(1))$numero_de_cliente
+
+df %>% filter(numero_de_cliente == cliente) %>%
+      select(numero_de_cliente, foto_mes, mcaja_ahorro_Paquete)
+```
+```{r}
+data_mi_agg %>% filter(numero_de_cliente == cliente)
+```
+
+Sabiendo que está bien calculada, pasamos a medir su potencia:
+
+```{r}
+modelar(data_mi_agg, target)
+```
+
+* ¿Qué otras variables de agregadas considera que son buenas predictoras?

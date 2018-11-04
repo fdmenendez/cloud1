@@ -1,0 +1,2 @@
+metrica	metrica2	parametros	fecha	clase	programa	algoritmo	dataset_generacion	dataset_aplicacion	observaciones	
+4158300	0.7837911	xval=0, maxdepth=16, minbucket=6, minsplit=20, cp=0	20180924 201031	ternaria	rpart_aplicar_01.r	rpart	201802.txt	201804.txt	5 semillas	

@@ -1,0 +1,37 @@
+WARNING: unknown option '--vanilla\n#Modelo'
+
+ARGUMENT 'con' __ignored__
+
+ARGUMENT 'libreria' __ignored__
+
+ARGUMENT 'rpart' __ignored__
+
+ARGUMENT 'con' __ignored__
+
+ARGUMENT 'optimizacion' __ignored__
+
+ARGUMENT 'bayesiana' __ignored__
+
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells  94578  5.1     350000 18.7   234762 12.6
+Vcells 201880  1.6     786432  6.0   683146  5.3
+WARNING: unknown option '--vanilla\n#Modelo'
+
+ARGUMENT 'con' __ignored__
+
+ARGUMENT 'libreria' __ignored__
+
+ARGUMENT 'rpart' __ignored__
+
+ARGUMENT 'con' __ignored__
+
+ARGUMENT 'optimizacion' __ignored__
+
+ARGUMENT 'bayesiana' __ignored__
+
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells  94578  5.1     350000 18.7   234762 12.6
+Vcells 201880  1.6     786432  6.0   683146  5.3
+         used (Mb) gc trigger (Mb) max used (Mb)
+Ncells  94576  5.1     350000 18.7   234594 12.6
+Vcells 201868  1.6     786432  6.0   683027  5.3

@@ -1,0 +1,11 @@
+experimento	metrica	metrica2	tiempo	parametros	fecha	clase	programa	algoritmo	busqueda	estimacion	dataset_train	dataset_test	observaciones	
+1100	2458400	0.6959359	52.22018	xval=0, maxdepth=4, minbucket=0, minsplit=2, cp=0	20180924 194059	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	3470000	0.8243027	74.09666	xval=0, maxdepth=6, minbucket=0, minsplit=2, cp=0	20180924 194225	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	3345000	0.8000728	87.55337	xval=0, maxdepth=8, minbucket=0, minsplit=2, cp=0	20180924 194403	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	2734800	0.7509787	108.3536	xval=0, maxdepth=10, minbucket=0, minsplit=2, cp=0	20180924 194603	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	2381400	0.6981282	126.4285	xval=0, maxdepth=12, minbucket=0, minsplit=2, cp=0	20180924 194821	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	1977400	0.6528055	136.9466	xval=0, maxdepth=14, minbucket=0, minsplit=2, cp=0	20180924 195053	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	1656400	0.6199092	115.3464	xval=0, maxdepth=16, minbucket=0, minsplit=2, cp=0	20180924 195259	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	1617400	0.5791697	126.5712	xval=0, maxdepth=18, minbucket=0, minsplit=2, cp=0	20180924 195517	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	1541200	0.5595262	142.9846	xval=0, maxdepth=20, minbucket=0, minsplit=2, cp=0	20180924 195753	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	
+1100	1313000	0.5351539	198.4154	xval=0, maxdepth=22, minbucket=0, minsplit=2, cp=0	20180924 200128	ternaria	rpart_tune_gridsearch_01.r	rpart	gridsearch	Montecarlo	201802.txt	201802.txt	5 semillas	

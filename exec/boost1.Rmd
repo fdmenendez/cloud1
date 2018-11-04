@@ -1,0 +1,207 @@
+---
+title: "Descenso infinito"
+author: "Alejandro Bolaños"
+date: "2018-10-1"
+version: 0.7
+output: 
+  html_document:
+    theme: spacelab
+    highlight: monochrome
+    df_print: paged
+#    toc: true
+#    toc_depth: 2
+
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+> Por este hecho he encontrado una demostración maravillosa. El  margen es demasiado pequeño para que dicha demostración quepa en él. --- Fermat
+
+Iniciamos los entornos.
+
+```{r}
+knitr::opts_knit$set(root.dir = 'C:/Users/saralb/Desktop/UBA/DropBox/UBA2018_20180803')
+rm( list=ls() )
+
+gc()
+
+```
+
+Para un algoritmo de Gradient Boosting, vamos a examinarlo de la mismas forma que lo hicimos con los árboles de decisión y con los random forest.
+
+[link](http://arogozhnikov.github.io/2016/06/24/gradient_boosting_explained.html)
+
+Cargamos las tablas
+
+```{r}
+library( "data.table" )
+library(dplyr)
+
+febrero  <-  fread("datasets/dias/201802_dias.txt", header=TRUE, sep="\t")
+abril  <-  fread("datasets/dias/201804_dias.txt", header=TRUE, sep="\t")
+
+clases_febrero <- ifelse(febrero$clase_ternaria == "BAJA+2", 1, 0)
+clases_abril <- ifelse(abril$clase_ternaria == "BAJA+2", 1, 0)
+
+febrero$clase_ternaria <- NULL
+
+```
+
+# XGBoost, primer vistazo
+
+```{r}
+library(xgboost)
+
+dtrain   <- xgb.DMatrix( data = data.matrix(febrero),  label = clases_febrero, missing=NA )
+
+set.seed(12345)
+modelo1 = xgb.cv( 
+				data = dtrain,  
+				missing = NA,
+				stratified = TRUE,       
+				
+				nround= 20,
+				nfold = 5,
+				
+				watchlist = list(metric='auc'),
+				early_stopping_rounds = 50,
+				
+				
+				# feval = ganancia,
+				eval_metric= "auc",
+				
+				maximize =TRUE,
+				
+				# subsample ratio of the training instance. Setting it to 0.5 means that xgboost randomly collected half of the data instances to grow trees and this will prevent overfitting. It makes computation shorter (because less data to analyse). It is advised to use this parameter with eta and increase nround. Default: 1
+				
+				subsample = 1, 
+				
+				# subsample ratio of columns when constructing each tree
+	 			colsample_bytree = 1, 
+				
+				# eta control the learning rate: scale the contribution of each tree by a factor of 0 < eta < 1 when it is added to the current approximation. Used to prevent overfitting by making the boosting process more conservative. Lower value for eta implies larger value for nrounds: low eta value means model more robust to overfitting but slower to compute.
+		    eta = 0.3,
+				
+				# min_child_weight minimum sum of instance weight (hessian) needed in a child. If the tree partition step results in a leaf node with the sum of instance weight less than min_child_weight, then the building process will give up further partitioning. In linear regression mode, this simply corresponds to minimum number of instances needed to be in each node. The larger, the more conservative the algorithm will be.
+				
+ 				min_child_weight = 1, 
+				
+				# max_depth maximum depth of a tree.
+	 			max_depth = 6,
+				
+				# L1 regularization
+		 		alpha = 0, 
+				# L2 regularization
+				lambda = 0, 
+				
+				#gamma minimum loss reduction required to make a further partition on a leaf node of the tree. the larger, the more conservative the algorithm will be.
+				
+				# gamma = 10,
+				
+				# base_score [default=0.5] : the initial prediction score of all instances, global bias
+
+				# objective specify the learning task and the corresponding learning objective, users can pass a self-defined function to it. The default objective options are below ... 
+				
+ 				objective="binary:logistic",
+				# tree_method = "hist",
+				verbose = 2
+			)
+```
+
+# Vemos el modelo resultante
+
+```{r}
+modelo1$best_iteration
+
+modelo1$best_ntreelimit
+```
+
+# Vemos con obtener el modelo final
+
+```{r}
+
+modelo = xgb.train( 
+				data = dtrain,  
+				missing = NA,
+				nround= 20,
+    	  eval_metric= "auc", 
+				maximize =TRUE,
+				objective="binary:logistic",
+			  verbose = 2
+			)
+```
+
+```{r}
+# Aplicamos el modelo
+abril$clase_ternaria <- NULL
+y_pred <- predict(modelo, data.matrix(abril),  type = "prob")
+
+# Calculamos la ROC en Test
+library(ROCR)
+pred_test <- prediction(y_pred,  clases_abril )
+auc_test <- ROCR::performance( pred_test,"auc")
+auc_test
+
+```
+# Cambiando la funci?n de optimizaci?n
+
+```{r}
+
+ganancia   <- function(probs, clases) 
+{
+
+   vlabels <- getinfo(clases, "label")
+
+   ganancia_calculada  <- sum(    (probs >( 250/10000) ) * 
+		                   ifelse( vlabels== 1, 11700, -300 )   
+              		     ) 
+   return(  list(metric = "ganancia", value = ganancia_calculada )  )
+}
+
+kbase_score  <-  sum( clases_febrero ) / length(clases_febrero)
+
+modelo.gan = xgb.cv( 
+				data = dtrain,  
+				missing = NA,
+				stratified = TRUE,       
+				nfold = 5 , 
+				objective="binary:logistic",
+				nround= 20, 
+				early_stopping_rounds = 100,
+				base_score = kbase_score ,
+				feval = ganancia,     
+				maximize =TRUE,
+				verbose = 2
+			)
+```
+
+Vemos un fuerte sobreajuste.
+```{r}
+modelo.gan$best_iteration
+
+modelo.gan$evaluation_log
+
+```
+
+```{r}
+modelo.gan.t = xgb.train( 
+				data = dtrain,  
+				missing = NA,
+				stratified = TRUE,       
+				objective="binary:logistic",
+				nround= 20, 
+				base_score = kbase_score ,
+				feval = ganancia,     
+				maximize =TRUE,
+				verbose = 2
+			)
+```
+
+# Aplicamos al OOT
+```{r}
+
+y_pred <- predict(modelo, data.matrix(abril),  type = "prob")
+
+sum((y_pred >( 0.025) ) * ifelse( clases_abril== 1, 11700, -300 )) 
+```

@@ -1,0 +1,278 @@
+---
+title: "E.D.A.: Exploratory data analysis"
+author: "Alejandro Bolaños"
+date: "2018-07-27"
+output: 
+  html_document:
+    theme: spacelab
+    highlight: zenburn
+#    toc: true
+#    toc_depth: 2
+
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+> If the statistics are boring, then you've got the wrong numbers.
+> --- Edward R. Tufte
+
+Ante todo levantamos en memoria el conjunto de datos entero, de esta forma vamos a poder explorar los mismos de forma rápida y eficiente. En caso de no disponer de un equipo con la capacidad de almacener el volumen en memoria, se podrá analizar mes a mes de forma individual.
+
+```{r setup}
+
+rm( list=ls() )
+gc()
+
+switch ( Sys.info()[['sysname']],
+         Windows = { directory.include  <-  "M:\\codigoR\\include\\"
+                     directory.work     <-  "M:\\work\\"
+                     directory.plan     <-  "M:\\plan\\"
+                     directory.datasets <-  "M:\\datasets\\dias\\"
+                     directory.root     <-  "M:\\"
+                   },
+         Darwin  = { directory.include  <-  "~/dm/codigoR/include/"
+                     directory.work     <-  "~/dm/work/"
+                     directory.plan     <-  "~/dm/plan/"
+                     directory.datasets <-  "~/dm/datasets/dias/"
+                   },
+         Linux   = { directory.include  <-  "~/cloud/cloud1/codigoR/include/"
+                     directory.work     <-  "~/cloud/cloud1/work/"
+                     directory.plan     <-  "~/cloud/cloud1/plan/"
+                     directory.datasets <-  "~/cloud/cloud1/datasets/dias/"
+                   }
+        )
+
+library( "data.table" )
+knitr::opts_knit$set(root.dir = directory.root)
+```
+
+```{r}
+ds  <-  fread("datasets/201802.txt", header=TRUE, sep="\t")
+
+```
+
+
+Visualizamos las primeras filas para empezar a intuir la consistencia de los datos
+
+```{r}
+head(ds, 10)
+```
+Lea la descripción de las variables compartida en el DropBox, trate de identificar que tipo de variables es:
+
+* Numérica
+* Categórica
+* Ordinal
+
+Empezamos poniendo el foco sobre la variable target mes a mes, tratamos de entender la cantidad de churn
+
+```{r}
+library(tidyr)
+library( "dplyr")
+ds %>% 
+  group_by(foto_mes, clase_ternaria) %>% 
+  summarise(cantidad = n()) %>% 
+  filter(foto_mes < 201804) %>%
+  spread(key=clase_ternaria, value=cantidad)
+```
+
+Consulta: Si cambiamos el orden del filtro anterior y ejecutamos la siguiente sentencia: ¿Por qué tarda sustancialmente más?
+
+```{r}
+ds %>%
+  filter(foto_mes < 201804) %>%
+  group_by(foto_mes, clase_ternaria) %>% 
+  summarise(cantidad = n()) %>% 
+  spread(key=clase_ternaria, value=cantidad)
+```
+
+Gráfiquemos para darnos un panorama general del problema, pero viendolo desde los ratios.
+
+```{r}
+
+library(ggplot2)
+
+data <- ds %>%
+  group_by(foto_mes) %>% 
+  summarise(cantidad = n())
+
+data$x <- seq.int(nrow(data))
+
+ggplot(data, aes(x = x, y = cantidad))+
+    geom_line(color="green", size = 2)+
+    scale_x_continuous(labels = data$foto_mes, breaks = 1:max(data$x), name="Foto Mes") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    ggtitle("Cantidad de personas premium a lo largo de los últimos 2 años") 
+
+```
+
+```{r}
+
+ratios <- ds %>% 
+  group_by(foto_mes, clase_ternaria) %>% 
+  summarise(cantidad = n()) %>% 
+  filter(foto_mes <= 201804) %>%
+  spread(key=clase_ternaria, value=cantidad) %>%
+  mutate (r_baja1 = `BAJA+1` / ( `BAJA+2` + `BAJA+1` + CONTINUA )) %>%
+  mutate (r_baja2 = `BAJA+2` / ( `BAJA+2` + `BAJA+1` + CONTINUA ))
+
+ratios
+
+ratios$x <- seq.int(nrow(ratios))
+
+ratios <- ratios %>%
+  select(x, foto_mes,  r_baja1, r_baja2) %>%
+  gather(clase, y, r_baja1, r_baja2, -foto_mes, -x)
+
+ggplot(ratios, aes(x = x, y = y))+
+  geom_line(aes(colour = clase), size = 1.5) +
+  scale_x_continuous(labels = unique(ratios$foto_mes), breaks = seq(1,28,1), name="Foto Mes") +
+  scale_y_continuous(name="% Churn") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggtitle("Variación del Churn a lo largo de los últimos 2 años") 
+
+```
+
+Examinemos la estructura de las variables independientemente, en principio solo sobre un único mes.
+
+Explore a la par de la descripción de las tablas.
+
+```{r}
+abril <- ds %>% filter(foto_mes == 201804)
+
+library(skimr)
+desc <- skim(abril) %>% as.data.frame()
+
+desc_df <- desc %>% group_by(variable, type) %>% select(variable, type,stat,value) %>% spread(key=stat, value=value)
+
+desc_df
+# desc_list <- skim(abril)
+```
+
+¿Conoce alguna librerías para obtener estadísticos sobre los variables?
+
+veamos como se comporta una variable a través de la historia, tomando una cualquiera sin pensar en el problema.
+
+```{r}
+ggplot(ds, aes(group=foto_mes, y=mcomisiones_mantenimiento)) + geom_boxplot()
+```
+* ¿Por qué se expande la distribución mes a mes? 
+* ¿Parece haber algún cambio de la estrategia del banco?
+
+```{r}
+ds %>% group_by(foto_mes) %>% 
+    summarise(mediana = median(mcomisiones_mantenimiento),
+              minimo = min(mcomisiones_mantenimiento)
+              ,maximo = max(mcomisiones_mantenimiento))
+```
+
+¿Y si empezamos a ver como se comportan los estadísticos según la clase?
+
+```{r}
+ds %>% group_by(foto_mes,clase_ternaria) %>% 
+    summarise(mediana = median(mcomisiones_mantenimiento),
+              minimo = min(mcomisiones_mantenimiento)
+              ,maximo = max(mcomisiones_mantenimiento))
+```
+
+Apuntemos a algo más visual para ver esas diferencias:
+
+```{r}
+# Overlaid histograms
+ggplot(abril, aes(x=mcomisiones_mantenimiento)) +
+    facet_grid(clase_ternaria ~ .) +
+     geom_density()
+```
+
+Examinemos ahora una variable categórica, tomemos Visa_cuenta_estado (esta no la elegimos ya desde un criterio no tan aleatorio)
+
+Vamos a ver empezar a ver de forma binaria la clase objetivo.
+
+```{r}
+abril_b <- abril %>%
+    mutate(binaria =
+      case_when(
+        clase_ternaria == "BAJA+2" ~ 1,
+        TRUE ~ 0
+      )
+    )
+```
+
+Graficamos para darnos una idea de la potencia discriminate que tiene esta variable:
+
+```{r}
+data <- abril_b %>%
+    group_by(Visa_cuenta_estado, binaria) %>%
+    count() %>%
+    spread(key=binaria, value=n) %>%
+    mutate(ratio = `1`/(`0`+`1`)) %>%
+    mutate(total = `0`+`1`)
+
+data
+
+data$Visa_cuenta_estado <- factor(data$Visa_cuenta_estado)
+
+ggplot(data, aes(x=Visa_cuenta_estado, y=ratio)) +
+  geom_bar(stat="identity", fill="red") +  geom_hline(yintercept = 0.005941818, color="black")
+
+ggplot(data, aes(x=Visa_cuenta_estado, y=total)) +
+  geom_bar(stat="identity", fill="blue")
+
+```
+
+Una métrica muy común para las variables discretas en el mundo de los modelos de riesgo es el [Information Value](https://www.listendata.com/2015/03/weight-of-evidence-woe-and-information.html) que se calcula agrupando el WoE de cada categoría. Se puede expandir el análisis a variables númericas discretizando las mismas. Se desarrollará en un spin-off.
+
+Exploramos a continuación una variable ordinal
+
+```{r}
+ggplot(abril, aes(x=cliente_antiguedad)) +
+    geom_histogram(position="identity", bins = )
+
+dv <- abril %>%  
+  mutate(bin = cut(cliente_antiguedad, 30)) %>%
+  group_by(clase_ternaria, bin) %>%
+  count() %>%
+  spread(clase_ternaria,n) %>%
+  mutate (r_baja1 = `BAJA+1` / ( `BAJA+2` + `BAJA+1` + CONTINUA )) %>%
+  mutate (r_baja2 = `BAJA+2` / ( `BAJA+2` + `BAJA+1` + CONTINUA )) %>%
+  mutate (total = ( `BAJA+2` + `BAJA+1` + CONTINUA )) %>%
+  select (r_baja1,r_baja2, bin, total) %>%
+  gather(clase, value, r_baja1,r_baja2,total, -bin)
+
+dv
+
+ggplot(dv %>% filter(clase != "total"), aes(x=bin, y = value)) +
+    facet_grid(clase ~ .) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    geom_col()
+ggplot(dv %>% filter(clase == "total"), aes(x=bin, y = value)) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    geom_col()
+```
+
+Para poder como interactuan varias variables en conjunto, vamos a utilizar un árbol de decisión.
+
+
+```{r}
+library(rpart)
+library( "rpart.plot" )
+
+modelo   <-  rpart( clase_ternaria ~ .,   data = abril,   cp=0.005,  xval=0 )
+
+# summary(modelo)
+
+prp( modelo, extra=101, digits=5, branch=1, type=4, varlen=0, faclen=0 )
+```
+
+Y vemos cual es la importancia de las variables para entender cuales son las más discriminantes.
+
+```{r}
+as.data.frame(modelo$variable.importance)
+```
+
+Preguntas:
+
+* ¿ Cómo podemos llevar este análisis de forma masiva al resto de las variables?
+* ¿ Es posible que haya variables que se comporten parecido? ¿Como podemos detectar esos grupos de variables? ¿De que podría ser útil contar con esos grupos?
+* ¿ Qué otras variables crearía para lograr explicar el churn?
+* Mirar de a una variable es algo difícil si contamos con cientos de las mismas... ¿Cuál es un primer modelo que nos ayuda a ver como la combinación de muchas variables son la causa del churn?
