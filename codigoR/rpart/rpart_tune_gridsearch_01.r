@@ -22,10 +22,10 @@ library( "caret" )
 
 
 switch ( Sys.info()[['sysname']],
-         Windows = { directory.include  <-  "codigoR\\include\\"
-                     directory.work     <-  "work\\"
-                     directory.plan     <-  "plan\\"
-                     directory.datasets <-  "datasets\\"
+         Windows = { directory.include  <-  "M:\\codigoR\\include\\"
+                     directory.work     <-  "M:\\work\\"
+                     directory.plan     <-  "M:\\plan\\"
+                     directory.datasets <-  "M:\\datasets\\"
                    },
          Darwin  = { directory.include  <-  "~/dm/codigoR/include/"
                      directory.work     <-  "~/dm/work/"
@@ -39,10 +39,10 @@ switch ( Sys.info()[['sysname']],
                    }
         )
 
-setwd( "C:\\Users\\fernando.d.menendez\\Google Drive\\Maestria\\Finanzas\\cloud1" )
 
-#setwd( directory.include )
-source( paste0(directory.include,"metrica.r") )
+
+setwd( directory.include )
+source( "metrica.r" )
 
 
 #Parametros entrada de nuestro dataset
@@ -137,8 +137,8 @@ modelo_rpart_ganancia = function( dataset, pmaxdepth, pminbucket, pminsplit, pcp
 
 
 #cargo los datos
-#setwd( paste0('..\\',directory.datasets) )
-dataset <- fread( paste0(directory.datasets,karchivo_entrada), header=TRUE, sep=kcampos_separador )
+setwd( directory.datasets )
+dataset <- fread( karchivo_entrada, header=TRUE, sep=kcampos_separador )
 
 
 #borro las variables que no me interesan
@@ -147,8 +147,8 @@ dataset[ ,  (kcampos_a_borrar) := NULL    ]
 
 
 #escribo los  titulos  del archivo salida
-#setwd( directory.work )
-if( !file.exists( paste0(directory.work,karchivo_salida)) )
+setwd( directory.work )
+if( !file.exists( karchivo_salida) )
 {
   cat("experimento",
       "metrica",
@@ -228,5 +228,5 @@ gc()
 
 
 #salgo del R sin grabar el gigante entorno
-#quit( save="no" )
+quit( save="no" )
 

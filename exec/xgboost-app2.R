@@ -15,7 +15,7 @@ switch ( Sys.info()[['sysname']],
          directory.plan     <-  "~/dm/plan/"
          directory.datasets <-  "~/dm/datasets/"
          },
-         Linux   = { script.name<-Sys.info()["nodename"]
+         Linux   = { 
          directory.include  <-  "~/cloud/cloud1/codigoR/include/"
          directory.work     <-  paste0("~/cloud/cloud1/work/",script.name,"/")
          directory.plan     <-  "~/cloud/cloud1/plan/"
@@ -24,54 +24,45 @@ switch ( Sys.info()[['sysname']],
 )
 
 #Parametros  Repeated Random Sub Sampling Validation
-ktraining_prob        <-  0.70
-ksemilla_azar         <-  c( 102191, 200177, 410551, 552581, 892237 )
+#ktraining_prob        <-  0.70
 kclase_nomcampo       <- "clase_binaria"
 
 source(paste0(directory.include,"utils.r"))
 source(paste0(directory.include,"xgboost-genetical.r"))
+source(paste0(directory.include,"metrica.r"))
 
 include.packages("data.table")
 include.packages("dplyr")
 include.packages("caret")
 include.packages("mlr")
 
-ganancia   <- function(probs, clases) 
-{
-  
-  ganancia_calculada  <- sum((probs >( 250/10000) ) * 
-                                   ifelse( clases == 1, 11700, -300 )   
-  ) 
-  return(  list(metric = "ganancia", value = ganancia_calculada )  )
-}
 
 
-dataset<- fread(paste0(directory.datasets,"201802_dias.txt"), header=TRUE, sep="\t")
-dataset<-clean.up(dataset)
-head(dataset)
+dataset_training<- fread(paste0(directory.datasets,"201802_dias.txt"), header=TRUE, sep="\t")
+#dataset<- rbind(dataset,fread(paste0(directory.datasets,"201801_hist.txt"), header=TRUE, sep="\t"))
+#dataset<- rbind(dataset,fread(paste0(directory.datasets,"201712_hist.txt"), header=TRUE, sep="\t"))
+
+dataset_training<-clean.up(dataset_training)
+head(dataset_training)
 set.seed( ksemilla_azar[1] )
-inTraining        <-  createDataPartition( dataset[ , kclase_nomcampo],   p = ktraining_prob, list = FALSE)
-dataset_training  <-  dataset[  inTraining, ]
-dataset_testing   <-  dataset[ -inTraining, ]
 
 setwd(directory.work)
 
-pop_inicial<-20
-nro_hijos<-20
-max_gen<-20
-nfold<-50
-nrounds<-50
+pop_inicial<-5
+nro_hijos<-4
+max_gen<-5
+nfold<-3
+nrounds<-10
 
 
 genet<-train_gen_xgboost(dataset_training,kclase_nomcampo,pop_inicial,nro_hijos,
-                         max_gen,nfold,nrounds,ksemilla_azar[1])
+                         max_gen,nfold,nrounds,ksemilla_azar[1],fganancia_logistic_xgboost)
+sum(ifelse( dataset_training[,kclase_nomcampo] == 1, 11700, 0 ))
+save(genet, file="genetical-boost-3months")
 
 set.seed( ksemilla_azar[1] )
 trainTask <- makeClassifTask(data = dataset_training,target = kclase_nomcampo, positive = 1)
-testTask <- makeClassifTask(data = dataset_testing, target = kclase_nomcampo, positive = 1)
-
 trainTask <- normalizeFeatures(trainTask,method = "standardize")
-testTask <- normalizeFeatures(testTask,method = "standardize")
 
 #im_feat <- generateFilterValuesData(trainTask, method = c("information.gain","chi.squared"))
 #plotFilterValues(im_feat,n.show = 20)
@@ -86,23 +77,26 @@ xg_set <- makeLearner("classif.xgboost", predict.type = "prob")
 xg_set$par.vals <- list(
   objective = "binary:logistic",
   #  eval_metric = ganancia,
-  eval_metric = "auc",
+#  eval_metric = "auc",
   maximize = T,
   verbose = 2,
   missing = NA,
-  nfold=10,
-  nrounds=10
-
+  nfold=3,
+  nrounds=10,
+  feval=fganancia_logistic_xgboost
+  
 )
 
 xg_set$par.vals<-c(xg_set$par.vals,as.list(genet$best_model[1:nrow(limits)]))
 
 xgb.model<-train(xg_set, trainTask)
 
-#test model
-predict.xg <- predict(xgb.model, testTask)
 
-sum((predict.xg$data$prob.1 >( 250/10000)) * ifelse( dataset_testing[,kclase_nomcampo] == 1, 11700, -300 ))
+
+#test model
+#predict.xg <- predict(xgb.model, testTask)
+
+#sum((predict.xg$data$prob.1 >( 250/10000)) * ifelse( dataset_testing[,kclase_nomcampo] == 1, 11700, -300 ))
 
 #write.csv(predict.xg$data,"salida-pred.csv")
 
@@ -117,6 +111,7 @@ sum(ifelse( dataset.oot[,kclase_nomcampo] == 1, 11700, 0 ))
 
 table(dataset.oot[,kclase_nomcampo])
 
+fganancia_logistic_xgboost(predict.oot$data$prob.1,dataset.oot[,kclase_nomcampo])
 sum((predict.oot$data$prob.1 >( 250/10000)) * ifelse( dataset.oot[,kclase_nomcampo] == 1, 11700, -300 ))
 
 #limpio la memoria

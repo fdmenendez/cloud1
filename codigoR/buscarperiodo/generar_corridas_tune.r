@@ -118,10 +118,10 @@ GenerarCorridasTune = function( palgoritmo, pexperimento_inicial, pplan )
 
 
 
-GenerarCorridasTune( "rpart",     4100, "generate_plan.txt" )
+GenerarCorridasTune( "rpart",     4100, "generate_plan_rpart.txt" )
 GenerarCorridasTune( "ranger",    5100, "generate_plan_ranger.txt" )
-GenerarCorridasTune( "xgboost",   6100, "generate_plan.txt" )
-GenerarCorridasTune( "lightgbm",  7100, "generate_plan.txt" )
+GenerarCorridasTune( "xgboost",   6100, "generate_plan_xgboost.txt" )
+GenerarCorridasTune( "lightgbm",  7100, "generate_plan_lightgbm.txt" )
 
 
 

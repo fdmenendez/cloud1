@@ -22,7 +22,7 @@ library( "ROCR" )
 
 
 #Parametros entrada
-karchivo_entrada      <-  "datasets\\201802.txt"
+karchivo_entrada      <-  "M:\\datasets\\201802.txt"
 kcampos_separador     <-  "\t"
 kcampo_id             <-  "numero_de_cliente"
 kclase_nomcampo       <-  "clase_ternaria"
@@ -34,7 +34,7 @@ ktraining_prob        <-  0.70
 ksemilla_azar         <- 102191
 
 #Parametros salida
-karchivo_imagen       <-  "work\\modelo_01.jpg"
+karchivo_imagen       <-  "M:\\work\\modelo_01.jpg"
 
 
 #constantes de la funcion ganancia del problema

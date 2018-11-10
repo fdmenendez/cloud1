@@ -14,10 +14,10 @@ gc()
 
 
 switch ( Sys.info()[['sysname']],
-         Windows = { directory.include  <-  "codigoR\\include\\"
-                     directory.work     <-  "work\\"
-                     directory.plan     <-  "plan\\"
-                     directory.datasets <-  "datasets\\"
+         Windows = { directory.include  <-  "M:\\codigoR\\include\\"
+                     directory.work     <-  "M:\\work\\"
+                     directory.plan     <-  "M:\\plan\\"
+                     directory.datasets <-  "M:\\datasets\\"
                    },
          Darwin  = { directory.include  <-  "~/dm/codigoR/include/"
                      directory.work     <-  "~/dm/work/"
@@ -34,15 +34,14 @@ switch ( Sys.info()[['sysname']],
 
 library( "rpart" )
 library( "data.table" )
-setwd( "C:\\Users\\fernando.d.menendez\\Google Drive\\Maestria\\Finanzas\\cloud1" )
 
 
-#setwd( directory.include )
-source( paste0(directory.include,"metrica.r"))
+setwd( directory.include )
+source( "metrica.r" )
 
 
 
-#Parametros entrada de nuestro dataset
+Parametros entrada de nuestro dataset
 karchivo_generacion   <-  "201802.txt"
 
 karchivo_aplicacion   <-  "201804.txt"
@@ -70,8 +69,8 @@ karchivo_intermedio   <-  "rpart_aplicar_intermedio.txt"
 
 
 #cargo los datos de generacion
-#setwd( directory.datasets )
-dataset_generacion <- fread( paste0(directory.datasets,karchivo_generacion), header=TRUE, sep=kcampos_separador )
+setwd( directory.datasets )
+dataset_generacion <- fread( karchivo_generacion, header=TRUE, sep=kcampos_separador )
 
 
 #borro las variables que no me interesan
@@ -96,8 +95,8 @@ modelo   <-  rpart( formula,   data = dataset_generacion,
 #ahora paso a aplicar el modelo que recien genere
 
 #cargo los datos de aplicacion
-#setwd( directory.datasets )
-dataset_aplicacion <- fread( paste0(directory.datasets,karchivo_aplicacion), header=TRUE, sep=kcampos_separador )
+setwd( directory.datasets )
+dataset_aplicacion <- fread( karchivo_aplicacion, header=TRUE, sep=kcampos_separador )
 
 
 #aplico el modelo a datos nuevos
@@ -153,8 +152,8 @@ densidad_envio        <-  sum( data_pred[ , enviar*positivo] ) / sum(   data_pre
 lift_envio            <-  densidad_envio / densidad_universo
 
 #grabo la prediccion a un archivo 
-#setwd( directory.work )
-fwrite( data_pred,  file=paste0(directory.work,karchivo_intermedio), row.names=FALSE, sep="\t" )
+setwd( directory.work )
+fwrite( data_pred,  file=karchivo_intermedio, row.names=FALSE, sep="\t" )
 
 #-----------------------
 
@@ -172,8 +171,8 @@ auc <-  fmetrica_auc_rpart( aplicacion_prediccion[, kclase_valor_positivo ],  da
 
 
 #escribo los  titulos  del archivo salida, en caso que no los tenga
-#setwd( directory.work )
-if( !file.exists( paste0(directory.work,karchivo_salida)) )
+setwd( directory.work )
+if( !file.exists( karchivo_salida) )
 {
   cat("metrica",
       "metrica2",
@@ -181,7 +180,7 @@ if( !file.exists( paste0(directory.work,karchivo_salida)) )
       "fecha", 
       "clase", "programa", "algoritmo", 
       "dataset_generacion", "dataset_aplicacion", "observaciones",
-      "\n", sep="\t", file=paste0(directory.work,karchivo_salida), fill=FALSE, append=FALSE )
+      "\n", sep="\t", file=karchivo_salida, fill=FALSE, append=FALSE )
 }
 
 
@@ -206,7 +205,7 @@ cat(
      kalgoritmo, 
      karchivo_generacion, karchivo_aplicacion,
      kobservaciones,
-     "\n", sep="\t", file=paste0(directory.work,karchivo_salida), fill=FALSE, append=TRUE 
+     "\n", sep="\t", file=karchivo_salida, fill=FALSE, append=TRUE 
   )
 
 

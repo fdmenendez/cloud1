@@ -1,1 +1,0 @@
-~/cloud/cloud1/codigoR//buscaperiodo/generar_corridas_rpart_tune.r

@@ -2,10 +2,10 @@
 require(dplyr)
 
 limits=data.frame(
-  params=c("max_depth","lambda","eta","subsample","min_child_weight","colsample_bytree"),
-  low=c(3,.55,.001,.1,1,.2),
-  uppr=c(50,.60,.5,.8,7,1),
-  dec=c(0,2,3,1,0,1),
+  params=c("max_depth","lambda","eta","subsample","min_child_weight","colsample_bytree","alpha"),
+  low=c(3,.50,.001,.1,1,.2,.50),
+  uppr=c(50,.60,.5,.8,7,1,.60),
+  dec=c(0,2,3,1,0,1,2),
   stringsAsFactors = FALSE
 )
 
@@ -38,7 +38,7 @@ makeGeneticLearner <- function (parms, train, FEVAL=NULL, eval_metric="auc", nro
     grow_policy="lossguide",
     updater="grow_fast_histmaker",
 #    early_stopping_rounds = round(nrounds*.4,0),
-    nthread=parallel::detectCores()-1,
+#    nthread=parallel::detectCores()-1,
     stratified = TRUE
   )
   ,as.list(parms[1:nrow(limits)]))
@@ -57,12 +57,65 @@ makeGeneticLearner <- function (parms, train, FEVAL=NULL, eval_metric="auc", nro
   
 }
 
-train_population<-function(pop, train, nfold = 5, nrounds = 10, sem = 1234, FEVAL=NULL, eval_metric = "auc") {
+
+
+makeGeneticLearner2 <- function (parms, trainTask, sem) {
+
+    set.seed(sem)
+    vals<-c(list(
+      objective = "binary:logistic"),
+      as.list(parms), list(
+        #  eval_metric = ganancia,
+        silent = 1,
+        tree_method = "hist",
+        grow_policy="lossguide",
+        updater="grow_fast_histmaker",
+        #    early_stopping_rounds = round(nrounds*.4,0),
+        maximize = T,
+        verbose = 0,
+        missing = NA,
+        stratified = TRUE))
+  
+    
+    xg_set <- mlr::makeLearner("classif.xgboost", 
+                             predict.type = "prob",
+                             par.vals = vals)
+  
+  
+  # ifelse(is.null(FEVAL),
+  #        {xg_set$par.vals[["eval_metric"]]<-eval_metric},
+  #        {xg_set$par.vals[["feval"]]<-FEVAL})
   
 
-  xg.sal<-apply(pop[pop$gen==max(pop$gen),],1,makeGeneticLearner,train = train, FEVAL=FEVAL, 
-                eval_metric=eval_metric, nrounds=nrounds, nfold = nfold, sem = sem)
+  #  print(xg_set$par.vals)
+  xg_model <- mlr::train(xg_set, task = trainTask)
+  #xg_model <- mlr::train(xg_set, task = trainTask)
+  
+  #  print(xg_model$learner$par.vals)
+  return(xg_model$learner.model$evaluation_log %>% .[order(.[,2],decreasing = T),2] %>% head(1))
+  
+}
+
+train_population<-function(pop, trainTask, nfold = 5, nrounds = 10, sem = 1234, FEVAL=NULL, eval_metric = "auc") {
+  
+
+#  xg.sal<-apply(pop[pop$gen==max(pop$gen),],1,makeGeneticLearner,train = train, FEVAL=FEVAL, 
+#     eval_metric=eval_metric, nrounds=nrounds, nfold = nfold, sem = sem)
     
+#  parms.fijo<-list(nrounds=nrounds, nfold = nfold, sem = sem,FEVAL=FEVAL, eval_metric=eval_metric)
+  ifelse(is.null(FEVAL),
+        {parms.fijo<-list(nrounds=nrounds, nfold = nfold, eval_metric=eval_metric)},
+        {parms.fijo<-list(nrounds=nrounds, nfold = nfold, feval=FEVAL)})
+  
+  
+  xg.sal<-NULL
+  
+  test<-pop %>% filter(gen==max(gen)) %>% select(-gen) %>% apply(.,1,as.list)
+  for(x in test) {
+    parms<-x  %>% append(.,parms.fijo)
+    xg.sal<-rbind(xg.sal,makeGeneticLearner2(parms, trainTask, sem))
+  }
+  gc()
   return(mutate(pop,fitness=unlist(xg.sal)))
 }
 
@@ -130,10 +183,10 @@ train_gen_xgboost<-function(data, campo_clase, pop_inicial, nro_hijos, max_gen, 
   # nro_hijos<-2
   # max_gen<-3
   # nfold<-3
-  # nrounds<-3
+  # nrounds<-10
   # sem=1234
   # eval_metric<-"auc"
-  # feval<-"auc"
+  # FEVAL<-fganancia_logistic_xgboost
   
   
 #  clases <- ifelse(data$clase_ternaria == "BAJA+2", 1, 0)
@@ -143,7 +196,8 @@ train_gen_xgboost<-function(data, campo_clase, pop_inicial, nro_hijos, max_gen, 
   trainTask <- mlr::normalizeFeatures(trainTask,method = "standardize")
   
   getParamSet("classif.xgboost")
-
+  configureMlr(on.par.without.desc = "quiet")
+  
   t0 <- Sys.time()
   
 
@@ -153,20 +207,20 @@ train_gen_xgboost<-function(data, campo_clase, pop_inicial, nro_hijos, max_gen, 
     ifelse(max(pop$gen)>=max_gen, {
       
       pop<-initilialize_population(pop_inicial,sem)
-      pop<-train_population(pop,trainTask,nfold,nrounds, sem)
+      pop<-train_population(pop,trainTask,nfold,nrounds, sem, FEVAL, eval_metric)
       pop.family<-pop
     },{
       pop.family<-pop
     })
   },{
     pop<-initilialize_population(pop_inicial,sem)
-    pop<-train_population(pop,trainTask,nfold,nrounds, sem)
+    pop<-train_population(pop,trainTask,nfold,nrounds, sem, FEVAL, eval_metric)
     pop.family<-pop
   })
   
   while (max(pop$gen)+1<=max_gen) {
     pop<-crossover(pop,nro_hijos,sem)
-    pop<-train_population(pop,trainTask,nfold,nrounds, sem)
+    pop<-train_population(pop,trainTask,nfold,nrounds, sem, FEVAL, eval_metric)
     pop.family<-rbind(pop.family,pop)
     cat(paste("---- Saving state - current generation =",max(pop$gen)))
     write.csv(pop.family, "genetical-exec.csv",row.names = F)
@@ -174,8 +228,8 @@ train_gen_xgboost<-function(data, campo_clase, pop_inicial, nro_hijos, max_gen, 
   t1 <- Sys.time()
   
   result_lst<-list(
-    "best_model" = pop %>% arrange(desc(fitness)) %>% head(1),
-    "full_family" = pop.family,
+    "best_model" = pop %>% mutate(fitness = round(fitness,0)) %>% arrange(desc(fitness)) %>% head(1),
+    "full_family" = pop.family %>% mutate(fitness = round(fitness,0)),
     "Start" = t0,
     "End" = t1
   )

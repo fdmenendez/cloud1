@@ -16,7 +16,7 @@ library( "data.table" )
 library( "rpart.plot" )
 
 #Parametros entrada
-karchivo_entrada      <-  "datasets\\201802.txt"
+karchivo_entrada      <-  "M:\\datasets\\201802.txt"
 kcampos_separador     <-  "\t"
 kcampo_id             <-  "numero_de_cliente"
 kclase_nomcampo       <-  "clase_ternaria"
@@ -25,8 +25,8 @@ kcampos_a_borrar      <-  c( kcampo_id )
 
 
 #Parametros salida
-karchivo_imagen1      <-  "work\\arbol_02.jpg"
-karchivo_imagen2      <-  "work\\arbol_02_optim.jpg"
+karchivo_imagen1      <-  "M:\\work\\arbol_02.jpg"
+karchivo_imagen2      <-  "M:\\work\\arbol_02_optim.jpg"
 
 
 

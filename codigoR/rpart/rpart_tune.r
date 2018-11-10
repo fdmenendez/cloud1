@@ -15,6 +15,8 @@
 rm( list=ls() )
 gc()
 
+
+
 switch ( Sys.info()[['sysname']],
          Windows = { directory.include  <-  "M:\\codigoR\\include\\"
                      directory.work     <-  "M:\\work\\"
@@ -32,6 +34,7 @@ switch ( Sys.info()[['sysname']],
                      directory.datasets <-  "~/cloud/cloud1/datasets/dias/"
                    }
         )
+
 
 
 library( "rpart" )
@@ -231,7 +234,7 @@ modelo_rpart_ganancia_MBO_Montecarlo = function( x = list( pmaxdepth, pminbucket
 }
 #------------------------------------------------------
 
-#corre  rpart  usando  las semillas, y promedia el resultado
+#corre  rpart  SIN usar semillas, ya que test es distinto a train
 
 modelo_rpart_ganancia_MBO_simple = function( x = list( pmaxdepth, pminbucket, pminsplit, pcp )  )
 {
@@ -362,9 +365,10 @@ ctrl <-  makeMBOControl(propose.points = 1L, save.on.disk.at.time = ksaveondisk_
 ctrl <-  setMBOControlTermination( ctrl, iters = kiteraciones )
 ctrl <-  setMBOControlInfill( ctrl, crit = makeMBOInfillCritEI(), opt  = "focussearch", opt.focussearch.points = kiteraciones )
 
-surr.km <-  makeLearner("regr.km", predict.type = "se", covtype = "matern3_2", control = list(trace = FALSE))
+Nuggets <- 1e-8*var(  dataset[ , get(kclase_nomcampo)==kclase_valor_positivo] )
 
-lrn  <- makeMBOLearner(ctrl, obj.fun)
+surr.km <-  makeLearner("regr.km", predict.type = "se", covtype = "matern3_2", nugget=Nuggets, control = list(trace = FALSE))
+
 
 setwd( directory.work )
 if( !file.exists( karchivo_trabajo) )

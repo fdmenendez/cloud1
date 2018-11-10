@@ -180,7 +180,7 @@ lista <- real_procesar2[ algoritmo=="lightgbm", ]
 if( nrow( lista )>0 )
 {
   setwd( directory.include )
-  source( "./lightgbm/lightgbm_apply.r" )
+  source( "../lightgbm/lightgbm_apply.r" )
 
   mapply( aplicar_lightgbm,  
           lista$dataset_generacion, 
