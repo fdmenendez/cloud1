@@ -16,11 +16,13 @@
 rm( list=ls() )
 gc()
 
-
+source("~/cloud/cloud1/codigoR/include/utils.r")
 
 library( "data.table" )
 library( "Rcpp")
 library( "dplyr" )
+include.packages("arules")
+
 
 
 
@@ -38,7 +40,7 @@ ventana_regresion   <- 6
 
 
 #La salida
-kextension               <-  "exthist"
+kextension               <-  "redhist"
 karchivo_salida_prefijo  <-  paste( "./", kextension, "/",    sep="" )
 karchivo_salida_sufijo   <-  paste( "_", kextension, ".rds",    sep="" )
 
@@ -183,8 +185,8 @@ dataset  <- as.data.table(
 
 dataset  <- as.data.table(
             mutate( dataset,
-              mv_cuenta_estado2       = pmax( recode( Master_cuenta_estado,  "NORMAL"=1,  "PROBLEMAS"=2, "CERRADA"=3),
-                                              recode(   Visa_cuenta_estado,  "NORMAL"=1,  "PROBLEMAS"=2, "CERRADA"=3), 
+              mv_cuenta_estado2       = pmax( dplyr::recode( Master_cuenta_estado,  "NORMAL"=1,  "PROBLEMAS"=2, "CERRADA"=3),
+                                              dplyr::recode(   Visa_cuenta_estado,  "NORMAL"=1,  "PROBLEMAS"=2, "CERRADA"=3), 
                                               na.rm = TRUE),
               mv_marca_atraso         = pmax( Master_marca_atraso, Visa_marca_atraso, na.rm = TRUE) ,
               mv_mfinanciacion_limite = rowSums( cbind( Master_mfinanciacion_limite,  Visa_mfinanciacion_limite) , na.rm=TRUE ),
@@ -223,6 +225,76 @@ dataset  <- as.data.table(
               mvr_mpagosdolares       = mv_mpagosdolares / mv_mlimitecompra ,
               mvr_mconsumototal       = mv_mconsumototal  / mv_mlimitecompra ,
               mvr_mpagominimo         = mv_mpagominimo  / mv_mlimitecompra 
+
+              #DISCRETIZACIONES
+              
+              ,cliente_edad = discretize(cliente_edad, method = "fixed", breaks = c(-Inf, 25, 35, 45, 55, Inf), 
+                                         labels = c("18-25", "25-35", "35-45", "45-55", "masDe55"))
+              ,cliente_antiguedad = discretize(cliente_antiguedad, method = "fixed", breaks = c(-Inf, 12, 24, 60, Inf), 
+                                         labels = c("-1a", "2a", "5a", "+5a"))
+              
+              #UNIFICACIONES
+              ,mcuenta_corriente = mcuenta_corriente_Nopaquete + mcuenta_corriente_Paquete
+              ,mcaja_ahorro = mcaja_ahorro_Paquete + mcaja_ahorro_Nopaquete
+              ,mtotal_prestamos = mprestamos_personales + mprestamos_prendarios + mprestamos_hipotecarios
+              ,tseguros = tseguro_vida_mercado_abierto + tseguro_auto + tseguro_vivienda + tseguro_accidentes_personales
+              ,ttarjeta_debitos_automaticos = ttarjeta_visa_debitos_automaticos + ttarjeta_master_debitos_automaticos
+              ,mttarjeta_debitos_automaticos = mttarjeta_visa_debitos_automaticos + mttarjeta_master_debitos_automaticos
+              ,tpagodeservicios = tpagodeservicios + tpagomiscuentas
+              ,mpagodeservicios = mpagodeservicios + mpagomiscuentas
+              ,cdescuentos = ccajeros_propios_descuentos + ctarjeta_visa_descuentos + ctarjeta_master_descuentos + ccuenta_descuentos
+              ,mdescuentos = mcajeros_propios_descuentos + mtarjeta_visa_descuentos + mtarjeta_master_descuentos + mcuenta_descuentos
+              ,ccomisiones = ccomisiones_mantenimiento + ccomisiones_otras
+              ,mcomisiones = mcomisiones_mantenimiento + mcomisiones_otras
+              
+              
+            ) %>%
+              select(
+                -tpaquete1
+                ,-tpaquete2
+                ,-tpaquete3
+                ,-tpaquete4
+                ,-tpaquete5
+                ,-tpaquete6
+                ,-tpaquete8
+                ,-mcuenta_corriente_dolares
+                ,-mcuenta_corriente_Nopaquete
+                ,-mcuenta_corriente_Paquete
+                ,-mcaja_ahorro_Paquete
+                ,-mcaja_ahorro_Nopaquete
+                ,-mprestamos_personales
+                ,-mprestamos_prendarios
+                ,-mprestamos_hipotecarios
+                ,-tseguro_vida_mercado_abierto
+                ,-tseguro_auto
+                ,-tseguro_vivienda
+                ,-tseguro_accidentes_personales
+                ,-tcaja_seguridad
+                ,-mbonos_corporativos
+                ,-mmonedas_extranjeras
+                ,-minversiones_otras
+                ,-ttarjeta_visa_debitos_automaticos
+                ,-ttarjeta_master_debitos_automaticos
+                ,-mttarjeta_visa_debitos_automaticos
+                ,-mttarjeta_master_debitos_automaticos
+                ,-tpagomiscuentas
+                ,-mpagomiscuentas
+                ,-ccajeros_propios_descuentos
+                ,-ctarjeta_visa_descuentos
+                ,-ctarjeta_master_descuentos
+                ,-ccuenta_descuentos
+                ,-mcajeros_propios_descuentos
+                ,-mtarjeta_visa_descuentos
+                ,-mtarjeta_master_descuentos
+                ,-mcuenta_descuentos
+                ,-ccomisiones_mantenimiento
+                ,-ccomisiones_otras
+                ,-mcomisiones_mantenimiento
+                ,-mcomisiones_otras
+                ,-tautoservicio
+                ,-cautoservicio_transacciones
+                ,-tcajas
+
               )
              )
 
