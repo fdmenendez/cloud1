@@ -47,7 +47,8 @@ kclase_nomcampo       <-  "clase_ternaria"
 kclase_valor_positivo <-  "BAJA+2"
 kcampos_a_borrar      <-  c( kcampo_id )
 
-karchivo_generacion   <-   "201801_dias.txt,201712_dias.txt,201711_dias.txt"
+#karchivo_generacion   <-   "201801_dias.txt,201712_dias.txt,201711_dias.txt"
+karchivo_generacion   <-   "201801_dias.txt"
 karchivo_aplicacion   <-   "201804_dias.txt"
 
 
@@ -70,8 +71,12 @@ dataset_generacion_sinclase   <- dataset_generacion[ , ! ( kclase_nomcampo), wit
 #genero one-hot enconding
 options(na.action='na.pass')
 formula  <- formula(paste("~ .-1"))
-dataset_generacion_sinclase_sparse  <- sparse.model.matrix( formula, data = dataset_generacion_sinclase )
 
+dataset_unido_matrix  = model.matrix(formula, data = dataset_generacion_sinclase)
+dataset_generacion_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
+rm(dataset_unido_matrix)
+#dataset_generacion_sinclase_sparse  <- sparse.model.matrix( formula, data = dataset_generacion_sinclase )
+gc()
 
 #genero el formato requerido por LightGBM
 dgeneracion  <-   lgb.Dataset( data  = data.matrix(dataset_generacion_sinclase_sparse),

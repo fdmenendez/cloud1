@@ -28,7 +28,7 @@ kclase_nomcampo       <- "clase_binaria"
 
 source(paste0(directory.include,"utils.r"))
 source(paste0(directory.include,"metrica.r"))
-source(paste0(directory.include,"xgboost-genetical.r"))
+source(paste0(directory.include,"lgbm-genetical.r"))
 
 include.packages("data.table")
 include.packages("mlr")
@@ -54,7 +54,7 @@ formula  <- formula(paste("~ .-1"))
 
 #dataset_sinclase_sparse  <- sparse.model.matrix( formula, data = dataset[,-which(names(dataset) == kclase_nomcampo) ] )
 
-dataset_unido_matrix  = model.matrix(formula, data = dataset[,-which(names(dataset) == kclase_nomcampo) ])
+dataset_unido_matrix  = model.matrix(formula, data = dataset[1:100000,-which(names(dataset) == kclase_nomcampo) ])
 dataset_unido_sparse2 = as(dataset_unido_matrix, "dgCMatrix")
 rm(dataset_unido_matrix)
 
@@ -81,6 +81,7 @@ object.size(dgeneracion)
 #                 num_leaves=75,
 #                 is_unbalance = TRUE)
 
+gc()
 set.seed( ksemilla_azar[1] )
 lgb.model = lgb.train(data = dgeneracion,                    
                       objective = "binary",

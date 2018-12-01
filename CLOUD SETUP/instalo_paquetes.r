@@ -1,0 +1,36 @@
+
+install.packages('rpart',                 repos = "https://cloud.r-project.org/" )
+install.packages('rpart.plot',            repos = "https://cloud.r-project.org/" )
+install.packages('ROCR',                  repos = "https://cloud.r-project.org/" )
+install.packages('MASS',                  repos = "https://cloud.r-project.org/" )
+install.packages('ranger',                repos = "https://cloud.r-project.org/" )
+install.packages('randomForest',          repos = "https://cloud.r-project.org/" )
+install.packages('rBayesianOptimization', repos = "https://cloud.r-project.org/" )
+install.packages('Matrix',                repos = "https://cloud.r-project.org/" )
+install.packages('xgboost',               repos = "https://cloud.r-project.org/" )
+install.packages('caret',                 repos = "https://cloud.r-project.org/", dependencies=TRUE )
+install.packages('data.table',            repos = "https://cloud.r-project.org/" )
+
+
+install.packages('curl',                  repos = "https://cloud.r-project.org/" )
+install.packages('DiceKriging',           repos = "https://cloud.r-project.org/" )
+install.packages('openssl',               repos = "https://cloud.r-project.org/" )
+install.packages('mlr',                   repos = "https://cloud.r-project.org/" )
+install.packages('mlrMBO',                repos = "https://cloud.r-project.org/" )
+
+install.packages('rsvg',                  repos = "https://cloud.r-project.org/" )
+install.packages('DiagrammeRsvg',         repos = "https://cloud.r-project.org/" )
+install.packages('DiagrammeR',            repos = "https://cloud.r-project.org/", dependencies=TRUE )
+install.packages('Rcpp',                  repos = "https://cloud.r-project.org/" )
+install.packages('dplyr',                 repos = "https://cloud.r-project.org/" )
+install.packages('purrr',                 repos = "https://cloud.r-project.org/" )
+install.packages('Hmisc',                 repos = "https://cloud.r-project.org/" )
+install.packages('GenAlgo',               repos = "https://cloud.r-project.org/", dependencies=TRUE )
+install.packages('arules',                 repos = "https://cloud.r-project.org/" )
+
+install.packages('roxygen2',              repos = "https://cloud.r-project.org/" )
+install.packages('crayon',                repos = "https://cloud.r-project.org/" )
+install.packages('devtools',              repos = "https://cloud.r-project.org/" )
+
+update.packages( ask=FALSE, repos = "https://cloud.r-project.org/"  )
+quit( save="no" )

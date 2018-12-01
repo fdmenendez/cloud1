@@ -39,11 +39,16 @@ include.packages("pryr")
 
 
 
-dataset_training<- fread(paste0(directory.datasets,"201802_dias.txt"), header=TRUE, sep="\t")
+dataset_training<- fread(paste0(directory.datasets,"201712_dias.txt"), header=TRUE, sep="\t")
+saveRDS(dataset_training,paste0(directory.datasets,"201712_dias.rds"))
 #dataset<- rbind(dataset,fread(paste0(directory.datasets,"201801_hist.txt"), header=TRUE, sep="\t"))
 #dataset<- rbind(dataset,fread(paste0(directory.datasets,"201712_hist.txt"), header=TRUE, sep="\t"))
 
 dataset_training<-clean.up(dataset_training)
+
+dataset.oot<- fread(paste0(directory.datasets,"201804_dias.txt"), header=TRUE, sep="\t")
+dataset.oot<-clean.up.oot(dataset.oot)
+
 head(dataset_training)
 set.seed( ksemilla_azar[1] )
 
@@ -56,7 +61,7 @@ nfold<-3
 nrounds<-5
 
 
-genet<-train_gen_xgboost(dataset_training,kclase_nomcampo,pop_inicial,nro_hijos,
+genet<-train_gen_xgboost(dataset_training,dataset.oot,kclase_nomcampo,pop_inicial,nro_hijos,
                          max_gen,nfold,nrounds,ksemilla_azar[1],fganancia_logistic_xgboost_hyp)
 
 sum(ifelse( dataset_training[,kclase_nomcampo] == 1, 11700, 0 ))

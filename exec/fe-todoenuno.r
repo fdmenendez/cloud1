@@ -207,6 +207,7 @@ dataset  <- as.data.table(
               mv_tconsumos            = rowSums( cbind( Master_tconsumos,  Visa_tconsumos) , na.rm=TRUE ),
               mv_tadelantosefectivo   = rowSums( cbind( Master_tadelantosefectivo,  Visa_tadelantosefectivo) , na.rm=TRUE ),
               mv_mpagominimo          = rowSums( cbind( Master_mpagominimo,  Visa_mpagominimo) , na.rm=TRUE ) ,
+			  mv_sueldototal          = rowSums( cbind( mplan_sueldo,  mplan_sueldo_manual) , na.rm=TRUE ),
               mvr_Master_mlimitecompra= Master_mlimitecompra / mv_mlimitecompra ,
               mvr_Visa_mlimitecompra  = Visa_mlimitecompra / mv_mlimitecompra ,
               mvr_msaldototal         = mv_msaldototal / mv_mlimitecompra ,
@@ -222,7 +223,37 @@ dataset  <- as.data.table(
               mvr_mpagospesos         = mv_mpagospesos / mv_mlimitecompra ,
               mvr_mpagosdolares       = mv_mpagosdolares / mv_mlimitecompra ,
               mvr_mconsumototal       = mv_mconsumototal  / mv_mlimitecompra ,
-              mvr_mpagominimo         = mv_mpagominimo  / mv_mlimitecompra 
+              mvr_mpagominimo         = mv_mpagominimo  / mv_mlimitecompra ,
+			  mvr_balance             = mcuentas_saldo / mv_sueldototal ,
+			  mvr_tranfsueldo         = mtransferencias_emitidas / mv_sueldototal ,
+			  mvr_tranfcuenta         = mtransferencias_emitidas / mcuentas_saldo ,
+			  mvr_salarioedad         = mv_sueldototal / cliente_edad ,
+			  mvr_balanceedad         = mcuentas_saldo / cliente_edad ,
+			  mvr_limitefinanedad     = mv_mfinanciacion_limite / cliente_edad ,
+			  mvr_limitecompraedad    = mv_mlimitecompra / cliente_edad ,
+			  mvr_permanenciaedad     = cliente_antiguedad / cliente_edad * 12,
+			  mvr_atrasadotarjeta     = ifelse(Visa_marca_atraso==1 | Master_marca_atraso ==1,1,0)
+			  
+			  
+              
+              ) %>%
+              select(
+                -tpaquete1
+                ,-tpaquete2
+                ,-tpaquete3
+                ,-tpaquete4
+                ,-tpaquete5
+                ,-tpaquete6
+                ,-tpaquete8
+                ,-mcuenta_corriente_dolares
+                ,-mbonos_corporativos
+                ,-mmonedas_extranjeras
+                ,-minversiones_otras
+                ,-ccuenta_descuentos
+                ,-mcuenta_descuentos
+                ,-tautoservicio
+                ,-cautoservicio_transacciones
+
               )
              )
 

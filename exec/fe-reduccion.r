@@ -209,43 +209,52 @@ dataset  <- as.data.table(
               mv_tconsumos            = rowSums( cbind( Master_tconsumos,  Visa_tconsumos) , na.rm=TRUE ),
               mv_tadelantosefectivo   = rowSums( cbind( Master_tadelantosefectivo,  Visa_tadelantosefectivo) , na.rm=TRUE ),
               mv_mpagominimo          = rowSums( cbind( Master_mpagominimo,  Visa_mpagominimo) , na.rm=TRUE ) ,
+			  mv_sueldototal          = rowSums( cbind( mplan_sueldo,  mplan_sueldo_manual) , na.rm=TRUE ),
               mvr_Master_mlimitecompra= Master_mlimitecompra / mv_mlimitecompra ,
               mvr_Visa_mlimitecompra  = Visa_mlimitecompra / mv_mlimitecompra ,
-              mvr_msaldototal         = mv_msaldototal / mv_mlimitecompra ,
-              mvr_msaldopesos         = mv_msaldopesos / mv_mlimitecompra ,
-              mvr_msaldopesos2        = mv_msaldopesos / mv_msaldototal ,
-              mvr_msaldodolares       = mv_msaldodolares / mv_mlimitecompra ,
-              mvr_msaldodolares2      = mv_msaldodolares / mv_msaldototal ,
-              mvr_mconsumospesos      = mv_mconsumospesos / mv_mlimitecompra ,
-              mvr_mconsumosdolares    = mv_mconsumosdolares / mv_mlimitecompra ,
-              mvr_madelantopesos      = mv_madelantopesos / mv_mlimitecompra ,
-              mvr_madelantodolares    = mv_madelantodolares / mv_mlimitecompra ,
-              mvr_mpagado             = mv_mpagado / mv_mlimitecompra ,
-              mvr_mpagospesos         = mv_mpagospesos / mv_mlimitecompra ,
-              mvr_mpagosdolares       = mv_mpagosdolares / mv_mlimitecompra ,
-              mvr_mconsumototal       = mv_mconsumototal  / mv_mlimitecompra ,
-              mvr_mpagominimo         = mv_mpagominimo  / mv_mlimitecompra 
-
+              mvr_msaldototal         = ifelse(is.nan(mv_msaldototal / mv_mlimitecompra),NA,mv_msaldototal / mv_mlimitecompra) ,
+              mvr_msaldopesos         = ifelse(is.nan(mv_msaldopesos / mv_mlimitecompra),NA,mv_msaldopesos / mv_mlimitecompra) ,
+              mvr_msaldopesos2        = ifelse(is.nan(mv_msaldopesos / mv_msaldototal),NA,mv_msaldopesos / mv_msaldototal) ,
+              mvr_msaldodolares       = ifelse(is.nan(mv_msaldodolares / mv_mlimitecompra),NA,mv_msaldodolares / mv_mlimitecompra) ,
+              mvr_msaldodolares2      = ifelse(is.nan(mv_msaldodolares / mv_msaldototal),NA,mv_msaldodolares / mv_msaldototal) ,
+              mvr_mconsumospesos      = ifelse(is.nan(mv_mconsumospesos / mv_mlimitecompra),NA,mv_mconsumospesos / mv_mlimitecompra) ,
+              mvr_mconsumosdolares    = ifelse(is.nan(mv_mconsumosdolares / mv_mlimitecompra),NA,mv_mconsumosdolares / mv_mlimitecompra) ,
+              mvr_madelantopesos      = ifelse(is.nan(mv_madelantopesos / mv_mlimitecompra),NA,mv_madelantopesos / mv_mlimitecompra) ,
+              mvr_madelantodolares    = ifelse(is.nan(mv_madelantodolares / mv_mlimitecompra),NA,mv_madelantodolares / mv_mlimitecompra) ,
+              mvr_mpagado             = ifelse(is.nan(mv_mpagado / mv_mlimitecompra),NA,mv_mpagado / mv_mlimitecompra) ,
+              mvr_mpagospesos         = ifelse(is.nan(mv_mpagospesos / mv_mlimitecompra),NA,mv_mpagospesos / mv_mlimitecompra) ,
+              mvr_mpagosdolares       = ifelse(is.nan(mv_mpagosdolares / mv_mlimitecompra),NA,mv_mpagosdolares / mv_mlimitecompra) ,
+              mvr_mconsumototal       = ifelse(is.nan(mv_mconsumototal  / mv_mlimitecompra),NA,mv_mconsumototal  / mv_mlimitecompra) ,
+              mvr_mpagominimo         = ifelse(is.nan(mv_mpagominimo  / mv_mlimitecompra),NA,mv_mpagominimo  / mv_mlimitecompra) 
+			  mvr_balance             = mcuentas_saldo / mv_sueldototal ,
+			  mvr_tranfsueldo         = mtransferencias_emitidas / mv_sueldototal ,
+			  mvr_tranfcuenta         = mtransferencias_emitidas / mcuentas_saldo ,
+			  mvr_salarioedad         = mv_sueldototal / cliente_edad ,
+			  mvr_balanceedad         = mcuentas_saldo / cliente_edad ,
+			  mvr_limitefinanedad     = mv_mfinanciacion_limite / cliente_edad ,
+			  mvr_limitecompraedad    = mv_mlimitecompra / cliente_edad ,
+			  mvr_permanenciaedad     = cliente_antiguedad / cliente_edad * 12
+			  
               #DISCRETIZACIONES
               
-              ,cliente_edad = discretize(cliente_edad, method = "fixed", breaks = c(-Inf, 25, 35, 45, 55, Inf), 
-                                         labels = c("18-25", "25-35", "35-45", "45-55", "masDe55"))
-              ,cliente_antiguedad = discretize(cliente_antiguedad, method = "fixed", breaks = c(-Inf, 12, 24, 60, Inf), 
-                                         labels = c("-1a", "2a", "5a", "+5a"))
+#              ,cliente_edad = discretize(cliente_edad, method = "fixed", breaks = c(-Inf, 25, 35, 45, 55, Inf), 
+#                                         labels = c("18-25", "25-35", "35-45", "45-55", "masDe55"))
+#              ,cliente_antiguedad = discretize(cliente_antiguedad, method = "fixed", breaks = c(-Inf, 12, 24, 60, Inf), 
+#                                         labels = c("-1a", "2a", "5a", "+5a"))
               
               #UNIFICACIONES
-              ,mcuenta_corriente = mcuenta_corriente_Nopaquete + mcuenta_corriente_Paquete
-              ,mcaja_ahorro = mcaja_ahorro_Paquete + mcaja_ahorro_Nopaquete
-              ,mtotal_prestamos = mprestamos_personales + mprestamos_prendarios + mprestamos_hipotecarios
-              ,tseguros = tseguro_vida_mercado_abierto + tseguro_auto + tseguro_vivienda + tseguro_accidentes_personales
-              ,ttarjeta_debitos_automaticos = ttarjeta_visa_debitos_automaticos + ttarjeta_master_debitos_automaticos
-              ,mttarjeta_debitos_automaticos = mttarjeta_visa_debitos_automaticos + mttarjeta_master_debitos_automaticos
-              ,tpagodeservicios = tpagodeservicios + tpagomiscuentas
-              ,mpagodeservicios = mpagodeservicios + mpagomiscuentas
-              ,cdescuentos = ccajeros_propios_descuentos + ctarjeta_visa_descuentos + ctarjeta_master_descuentos + ccuenta_descuentos
-              ,mdescuentos = mcajeros_propios_descuentos + mtarjeta_visa_descuentos + mtarjeta_master_descuentos + mcuenta_descuentos
-              ,ccomisiones = ccomisiones_mantenimiento + ccomisiones_otras
-              ,mcomisiones = mcomisiones_mantenimiento + mcomisiones_otras
+              ,mcuenta_corriente = rowSums( cbind( mcuenta_corriente_Nopaquete,  mcuenta_corriente_Paquete) , na.rm=TRUE )
+              ,mcaja_ahorro = rowSums( cbind( mcaja_ahorro_Paquete , mcaja_ahorro_Nopaquete) , na.rm=TRUE )
+              ,mtotal_prestamos = rowSums( cbind( mprestamos_personales , mprestamos_prendarios , mprestamos_hipotecarios) , na.rm=TRUE )
+              ,tseguros = rowSums( cbind( tseguro_vida_mercado_abierto , tseguro_auto , tseguro_vivienda , tseguro_accidentes_personales) , na.rm=TRUE )
+              ,ttarjeta_debitos_automaticos = rowSums( cbind( ttarjeta_visa_debitos_automaticos , ttarjeta_master_debitos_automaticos) , na.rm=TRUE )
+              ,mttarjeta_debitos_automaticos = rowSums( cbind( mttarjeta_visa_debitos_automaticos , mttarjeta_master_debitos_automaticos) , na.rm=TRUE )
+              ,tpagodeservicios = rowSums( cbind( tpagodeservicios , tpagomiscuentas) , na.rm=TRUE )
+              ,mpagodeservicios = rowSums( cbind( mpagodeservicios , mpagomiscuentas) , na.rm=TRUE )
+              ,cdescuentos = rowSums( cbind( ccajeros_propios_descuentos , ctarjeta_visa_descuentos , ctarjeta_master_descuentos , ccuenta_descuentos) , na.rm=TRUE )
+              ,mdescuentos = rowSums( cbind( mcajeros_propios_descuentos , mtarjeta_visa_descuentos , mtarjeta_master_descuentos , mcuenta_descuentos) , na.rm=TRUE )
+              ,ccomisiones = rowSums( cbind( ccomisiones_mantenimiento , ccomisiones_otras) , na.rm=TRUE )
+              ,mcomisiones = rowSums( cbind( mcomisiones_mantenimiento , mcomisiones_otras) , na.rm=TRUE )
               
               
             ) %>%

@@ -54,7 +54,7 @@ source( "metrica.r" )
 #parametros de entrada del script R
 args <- commandArgs(trailingOnly = TRUE)
 
-#args <-  c( "667",  "201802_dias.txt",   "201804_dias.txt" )
+args <-  c( "667",  "201802_dias.txt",   "201804_dias.txt" )
 
 if(length(args)<3) 
 {
