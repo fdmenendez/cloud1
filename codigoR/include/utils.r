@@ -212,16 +212,24 @@ sample.datasets <- function(files, prefijo, sufijo, mas_clases = "N", alg, subsa
 }
 
 
-aplicar_modelo <- function(modelo, dataset, clase, kmin_corte=.005, kmax_corte=.1) {
+aplicar_modelo <- function(modelo, dataset, clase,xgb.genet=F, kmin_corte=.005, kmax_corte=.1) {
   
-  options(na.action='na.pass')
-  formula  <- formula(paste("~ .-1"))
-  dataset_unido_matrix  = model.matrix(formula, data = dataset[ , -which(names(dataset) == clase)   ])
-  dataset_validacion_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
-  rm(dataset_unido_matrix)
-  gc()
-  
-  aplicacion_prediccion  <- predict(  modelo, as.matrix( dataset_validacion_sinclase_sparse) )
+  ifelse(xgb.genet,
+         {
+           testTask <- mlr::makeClassifTask(data = dataset,target = clase, positive = 1)
+           aplicacion_prediccion  <- predict(  modelo, testTask )
+           aplicacion_prediccion <- aplicacion_prediccion$data$prob.1
+         },
+         {
+           options(na.action='na.pass')
+           formula  <- formula(paste("~ .-1"))
+           dataset_unido_matrix  = model.matrix(formula, data = dataset[ , -which(names(dataset) == clase)   ])
+           dataset_validacion_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
+           rm(dataset_unido_matrix)
+           gc()
+           
+           aplicacion_prediccion  <- predict(  modelo, as.matrix( dataset_validacion_sinclase_sparse) )
+         })
   
   out<-data.frame(prob_corte=as.numeric(), ganancia=as.numeric())
   kcortes<-seq(kmin_corte,kmax_corte,.0001)

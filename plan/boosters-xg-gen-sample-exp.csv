@@ -1,3 +1,2 @@
 job,files,test,valid,ext,mas_clases,subsample,pop_inicial,nro_hijos,max_gen,nfold,nrounds,exp,ganacia_test,pcorte_max,ganancia_valid
-120,"201712_,201711_,201710_,201709_",201802_,201804_,exthist,Y,1,10,6,20,3,500,,,,
-121,"201612_,201611_,201610_,201609_",201802_,201804_,exthist,Y,1,10,6,20,3,500,,,,
+150,nuevo_febrero,nuevo_abril,nuevo_abril,exthist,N,1,10,6,20,3,100,,,,

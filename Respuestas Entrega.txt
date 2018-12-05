@@ -1,0 +1,67 @@
+1)¿Qué  ganancia  espera  obtener  en  Junio  2018  ?  ¿Qué  procedimiento  ha  seguido  para  calcular  esa  ganancia  y  como  se  aseguró  de  no  estar  sobreestimando  esa  ganancia,  cometiendo  overfitting  u  oversearching?
+
+Se espera una ganancia similar a la de Abril (alrededor de 7.3M) ya que se observa una cantidad de clientes similar por lo que se espera que el flujo de entrada / salida de los mismos se mantenga
+
+2)Describan  en  gran  detalle  en  que  consiste  el  modelo  entregado.
+
+- El modelo entregado consiste en un stacking con base en lightgbm y xgboost.
+Se entrenaron 6 modelos lightgbm, 3 con datos de octubre a diciembre de 2017 y 3 con los mismos meses de 2016.
+Estos modelos son los que presentaron mejores ganacias en febrero de 2017 cambiando entre 5 semillas (5 de 2017 y 5 de 2016)
+La optimizacion se realizo mediante el metodo bayesiano.
+
+De la misma forma, se entrenaron 4 xgboost, 2 con 2017 y 2 con 2017, selecionados de entre 10 (5 y 5) presentando la mejor ganancia variando la semilla.
+La optimizacion se realizo mediante algoritmo genetico.
+
+Finalmente se stackearon las prediciones de los 10 modelos en conjunton con las 25 variables mas importantes identificadas de los modelos.
+El modelo final es un xgboost, optimizado geneticamente.
+
+
+3)¿Cuántas  horas  hombre  dedicaron  en  total  a  este  trabajo?  Cuánto  dinero  gastaron  en  procesamiento  ?
+
+- Horas hombre: +250 horas
+- Dinero gastado en cloud: u$s 510
+
+4)¿Cómo  era  su  segundo  mejor  modelo?  Que  ganancia  obtenía  este  modelo  en  abril  y  cuanto  menor  que  la  ganancia  del  modelo  finalmente  entregado  ?
+
+- Nuestro segundo mejor modelo es un XGboost optimizado, con una ganancia en abril de 7125356
+
+
+5)De  su  modelo  final,  ¿qué  parámetros  optimizó  para  generarlo?  Mencione  los  valores  óptimos  de  esos  parámetros  que  encontraron.
+
+- Se encontraron mediante optimizacion genetica los siguientes parametros:
+
+max_depth=3 
+lambda=0.65
+eta=0.057
+subsample=0.7
+min_child_weight=1 
+colsample_bytree=0.2
+alpha=0.5
+prob_corte=0.0202
+
+
+6)¿Creó  variables  históricas?  ¿Aparecieron  en  el  modelo  final?  Mencione  algunas
+
+Se crearon la siguentes variables 
+
+mvr_balance             = mcuentas_saldo / mv_sueldototal ,
+mvr_tranfsueldo         = mtransferencias_emitidas / mv_sueldototal ,
+mvr_tranfcuenta         = mtransferencias_emitidas / mcuentas_saldo ,
+mvr_salarioedad         = mv_sueldototal / cliente_edad ,
+mvr_balanceedad         = mcuentas_saldo / cliente_edad ,
+mvr_limitefinanedad     = mv_mfinanciacion_limite / cliente_edad ,
+mvr_limitecompraedad    = mv_mlimitecompra / cliente_edad ,
+mvr_permanenciaedad     = cliente_antiguedad / cliente_edad * 12
+
+
+De las cuales, mvr_balance y mvr_balanceedad, llegaron al modelo final.
+
+7)¿Cuál  fue  la  decisión  más  difícil  que  debió  tomar,  la  que  generó  más  incertidumbre?
+
+- Al punto de la entrega consideramos que la decision mas dificil fue la de reentrenar los modelos para incluir en el entrenamiento los datos de abril que se usaron mayormente para validacion. 
+Finalmente se opto por no hacerlo debido a los tiempos de procesamiento.
+
+8)¿Qué  cosas  habría  probado  de  haber  tenido  más  tiempo?
+
+- Stacking con Red Neuronal.
+- Tecnica de Fuzzy Clustering para segmentar clientes y puntos de corte.

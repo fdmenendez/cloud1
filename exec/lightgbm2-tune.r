@@ -53,7 +53,7 @@ source( "utils.r" )
 #parametros de entrada del script R
 args <- commandArgs(trailingOnly = TRUE)
 
-args <-  c( "15",  "201712_,201711_,201710_,201709_",   "201802_" )
+args <-  c( "998",  "nuevo_febrero.rds",   "nuevo_abril.rds" )
 
 if(length(args)<3) 
 {
@@ -76,8 +76,8 @@ kcampo_id             <-  "numero_de_cliente"
 kclase_nomcampo       <-  "clase_binaria"
 kcampos_a_borrar      <-  c( kcampo_id )
 
-kclase_valor_positivo_train <-  c( "BAJA+1", "BAJA+2"  )
-kclase_valor_positivo_test  <-  c(  "BAJA+2" )
+kclase_valor_positivo_train <-  c( 1  )
+kclase_valor_positivo_test  <-  c(  1 )
 
 
 
@@ -378,15 +378,17 @@ datasets_lightgbm = function( parchivos1, parchivos2 )
 #  varchivos1  <-  unlist(strsplit( parchivos1, split=","))
 #  dataset1 <- do.call(rbind, lapply( varchivos1, function(x) fread(x, header=TRUE, sep=kcampos_separador)))
 
-  dataset1 <- as.data.frame(sample.datasets(parchivos1,directory.datasets,paste0(kextension,".rds"),"Y","lgb",ksubsample,ksemilla))
+#  dataset1 <- as.data.frame(sample.datasets(parchivos1,directory.datasets,paste0(kextension,".rds"),"Y","lgb",ksubsample,ksemilla))
+  dataset1 <- do.call(rbind, lapply( varchivos, function(x) as.data.frame(readRDS(x))))
   #dejo la clase en {0,1}  clase  binaria2
   dataset1_clase  <- as.numeric(dataset1[ ,kclase_nomcampo]) 
   
   #cargo 2
   varchivos2  <-  unlist(strsplit( parchivos2, split=","))
   setwd(  directory.datasets )
-  dataset2 <- do.call(rbind, lapply( varchivos2, function(x) as.data.table(readRDS(paste0(x,kextension,".rds")))))
-  dataset2 <- clean.up.oot.lgb(dataset2)
+#  dataset2 <- do.call(rbind, lapply( varchivos2, function(x) as.data.table(readRDS(paste0(x,kextension,".rds")))))
+  dataset2 <- do.call(rbind, lapply( varchivos2, function(x) as.data.frame(readRDS(x))))
+#  dataset2 <- clean.up.oot.lgb(dataset2)
   
   #dejo la clase en {0,1}  clase  binaria2
   dataset2_clase  <- as.numeric(dataset2[ ,kclase_nomcampo]) 
@@ -435,15 +437,15 @@ dataset_lightgbm = function( parchivos )
   #cargo generacion
   varchivos  <-  unlist(strsplit( parchivos, split=","))
   setwd(  directory.datasets )
-  dataset <- do.call(rbind, lapply( varchivos, function(x) fread(x, header=TRUE, sep=kcampos_separador)))
+  dataset <- do.call(rbind, lapply( varchivos, function(x) as.data.table(readRDS(x))))
 
   #borro las variables que no me interesan
-  dataset[ ,  (kcampos_a_borrar) := NULL    ] 
+  #dataset[ ,  (kcampos_a_borrar) := NULL    ] 
 
   weights <-  ifelse( dataset[, get(kclase_nomcampo) ] %in% kclase_valor_positivo_test,  1.0000001, 1.0 )
   
   #dejo la clase en {0,1}  clase  binaria1
-  dataset[, (kclase_nomcampo) := as.numeric( get(kclase_nomcampo) %in% kclase_valor_positivo_train  ) ]
+  #dataset[, (kclase_nomcampo) := as.numeric( get(kclase_nomcampo) %in% kclase_valor_positivo_train  ) ]
 
   dataset_sinclase   <- dataset[ , ! ( kclase_nomcampo), with=FALSE   ]
 

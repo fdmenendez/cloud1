@@ -49,9 +49,9 @@ kclase_valor_positivo <-  "BAJA+2"
 kcampos_a_borrar      <-  c( kcampo_id )
 
 #karchivo_generacion   <-   "201801_dias.txt,201712_dias.txt,201711_dias.txt"
-karchivo_generacion   <-   "201712_,201711_,201710_,201709_,201708_,201707_"
-karchivo_aplicacion   <-   paste0("201802_",kextension,".rds")
-karchivo_validacion   <-   paste0("201804_",kextension,".rds")
+karchivo_generacion   <-   "nuevo_febrero.rds"
+karchivo_aplicacion   <-   "nuevo_abril.rds"
+karchivo_validacion   <-   "nuevo_abril.rds"
 
 kmin_corte <- 0.005
 kmax_corte <- 0.090
@@ -93,71 +93,85 @@ calcular_ganancia   <- function(probs, clases)
   return(  val )
 }
 
+preparar_lgbm<- function(dataset, clase) {
+  #genero one-hot enconding
+  options(na.action='na.pass')
+  formula  <- formula(paste("~ .-1"))
+  
+  dataset_unido_matrix  = model.matrix(formula,data = dataset[ , -which(names(dataset) == clase)   ])
+  dataset_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
+  
+  #genero el formato requerido por LightGBM
+  dlight  <-   lgb.Dataset( data  = data.matrix(dataset_sinclase_sparse),
+                            label = dataset[ , clase], 
+                            missing=NA,
+                            free_raw_data=FALSE 
+  )
+  
+  rm(dataset_unido_matrix,dataset_sinclase_sparse)
+  gc()
+  
+  return(dlight)
+  
+}
+
+
+
+preparar_xgb<- function(dataset,clase) {
+  
+  options(na.action='na.pass')
+  formula  <- formula(paste("~ .-1"))
+  
+  dataset_unido_matrix  = model.matrix(formula,data = dataset[ , -which(names(dataset) == clase)   ])
+  dataset_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
+  
+  #genero el formato requerido por XGBOOST
+  dboost  <-   xgb.DMatrix( data  = data.matrix(dataset_sinclase_sparse),
+                            label = dataset[ , clase], 
+                            missing=NA
+  )
+  
+  rm(dataset_unido_matrix,dataset_sinclase_sparse)
+  gc()
+  
+  return(dboost)
+}
+
+
+preparar_matriz<-function(dataset,clase) {
+  
+  options(na.action='na.pass')
+  formula  <- formula(paste("~ .-1"))
+  dataset_unido_matrix  = model.matrix(formula, data = dataset[ , -which(names(dataset) == clase)   ])
+  dataset_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
+  rm(dataset_unido_matrix)
+  gc()
+  
+  return(dataset_sinclase_sparse)
+}
+
 #------------------------------------------------------------------------------
 
 setwd(  directory.datasets )
 
-dataset_generacion    <-  as.data.frame(sample.datasets(karchivo_generacion, directory.datasets, 
-                                          paste0(kextension,".rds"), "Y","lgb"
-                                          ,.3,seed
-                                        ))
-
-#genero one-hot enconding
-options(na.action='na.pass')
-formula  <- formula(paste("~ .-1"))
-
-dataset_unido_matrix  = model.matrix(formula,data = dataset_generacion[ , -which(names(dataset_generacion) == kclase_nomcampo)   ])
-dataset_generacion_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
-
-#dataset_generacion_sinclase_sparse  <- sparse.model.matrix( formula, data = dataset_generacion_sinclase )
-
+dataset_generacion    <-  as.data.table(readRDS( karchivo_aplicacion)) 
 
 #genero el formato requerido por LightGBM
-dgeneracion  <-   lgb.Dataset( data  = data.matrix(dataset_generacion_sinclase_sparse),
-                               label = dataset_generacion[ , kclase_nomcampo], 
-                               missing=NA,
-                               free_raw_data=FALSE 
-                              )
+dgeneracion  <-   preparar_lgbm(dataset_generacion,kclase_nomcampo)
 
-rm(dataset_unido_matrix,dataset_generacion_sinclase_sparse)
-gc()
 #-------------------------
 
 dataset_aplicacion <-  as.data.table(readRDS( karchivo_aplicacion)) 
-dataset_aplicacion <- clean.up.oot.lgb(dataset_aplicacion)
-
-#borro las variables que no me interesan
-#dataset_aplicacion[ ,  (kcampos_a_borrar) := NULL    ] 
-
-
-#dejo la clase en {0,1}  clase  binaria1
-#dataset_aplicacion[, (kclase_nomcampo) := as.numeric( get(kclase_nomcampo) == kclase_valor_positivo  )] 
-
-#genero one-hot enconding
-options(na.action='na.pass')
-formula  <- formula(paste("~ .-1"))
-
-dataset_unido_matrix  = model.matrix(formula, data = dataset_aplicacion[ , -which(names(dataset_aplicacion) == kclase_nomcampo)   ])
-dataset_aplicacion_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
-
-
 #genero el formato requerido por LightGBM
-dvalidacion  <-   lgb.Dataset( data  = data.matrix(dataset_aplicacion_sinclase_sparse),
-                               label = dataset_aplicacion[ , kclase_nomcampo], 
-                               missing=NA,
-                               free_raw_data=FALSE 
-)
+daplicacion  <-   preparar_lgbm(dataset_aplicacion,kclase_nomcampo)
 
-rm(dataset_unido_matrix,dataset_aplicacion_sinclase_sparse)
-gc()
-#genero el modelo
 
 t0       <-  Sys.time()
 
 modelo = lightgbm::lgb.train( 
                data = dgeneracion,
                objective = "binary",
-               valids=list(validacion=dvalidacion),
+               valids=list(validacion=daplicacion),
                seed=seed,
                num_iterations=2000,
                early_stopping_round=300,
@@ -166,15 +180,17 @@ modelo = lightgbm::lgb.train(
                metric="auc",
                verbose=2,
                bagging_fraction=1, 
-               feature_fraction=0.50, 
-               learning_rate=0.020, 
-               min_child_weight=8, 
+               feature_fraction=0.300966366658785, 
+               learning_rate=0.00480114553818008, 
+               min_data_in_leaf=66,
+#               min_child_weight=8, 
                max_depth=10, 
-               lambda_l1=0.50,
-               lambda_l2=10,
-               max_bin=32, 
-               num_leaves=255,    
-               min_gain_to_split = 0
+               lambda_l1=0.691594630645328,
+#               lambda_l2=10,
+               max_bin=31, 
+               num_leaves=478,    
+               min_gain_to_split = 0.678784428363361,
+               subsample=1
 #               is_unbalance = TRUE
               )
 
@@ -190,13 +206,8 @@ setwd(  directory.datasets )
 #dataset_aplicacion_sinclase_sparse  <- sparse.model.matrix( formula, data = dataset_aplicacion_sinclase )
 
 dataset_validacion <-  as.data.table(readRDS( karchivo_validacion)) 
-dataset_validacion <- clean.up.oot.lgb(dataset_validacion)
-#genero one-hot enconding
 
-options(na.action='na.pass')
-formula  <- formula(paste("~ .-1"))
-dataset_unido_matrix  = model.matrix(formula, data = dataset_validacion[ , -which(names(dataset_validacion) == kclase_nomcampo)   ])
-dataset_validacion_sinclase_sparse = as(dataset_unido_matrix, "dgCMatrix")
+dataset_validacion_sinclase_sparse = preparar_matriz(dataset_validacion,kclase_nomcampo)
 
 #aplico el modelo a datos nuevos
 aplicacion_prediccion  <- predict(  modelo, as.matrix( dataset_validacion_sinclase_sparse) )
@@ -217,5 +228,5 @@ cat( "tiempo = ",  tiempo, "\n"  )
 
 setwd(directory.work)
 
-save(modelo,file=paste0("sampled-lgb-",seed))
+#save(modelo,file=paste0("lgb-",seed))
 

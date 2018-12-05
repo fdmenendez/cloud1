@@ -61,10 +61,10 @@ makeGeneticLearner2 <- function (parms, trainTask, testTask, test_class) {
   ),
   as.list(parms), list(
     #  eval_metric = ganancia,
-    silent = 1,
+    #silent = 1,
     #    early_stopping_rounds = round(nrounds*.4,0),
     maximize = T,
-    verbose = 0,
+    #verbose = 1,
     missing = NA,
     stratified = TRUE))
   

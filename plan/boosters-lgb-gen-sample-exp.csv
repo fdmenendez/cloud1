@@ -1,3 +1,3 @@
 job,files,test,valid,ext,mas_clases,subsample,pop_inicial,nro_hijos,max_gen,nrounds,early_stopping_round,exp,ganacia_test,pcorte_max,ganancia_valid
-220,"201712_,201711_,201710_,201709_",201802_,201804_,exthist,Y,1,10,6,2,1000,300,,,,
-221,"201612_,201611_,201610_,201609_",201802_,201804_,exthist,Y,1,10,6,2,1000,300,,,,
+220,"201712_,201711_,201710_,201709_",201802_,201804_,exthist,Y,1,10,6,20,1000,300,,,,
+221,"201612_,201611_,201610_,201609_",201802_,201804_,exthist,Y,1,10,6,20,1000,300,,,,
